@@ -1,0 +1,26 @@
+{
+  "name": "jonathanbossenger/wp-ai-workshop-demo",
+  "description": "A WordPress AI Workshop demo plugin.",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0-or-later",
+  "version": "2.0.0",
+  "authors": [
+    {
+      "name": "Jonathan Bossenger",
+      "email": "jonathanbossenger@gmail.com"
+    }
+  ],
+  "minimum-stability": "stable",
+  "config": {
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true,
+      "php-http/discovery": true
+    }
+  },
+  "require-dev": {
+    "wp-coding-standards/wpcs": "^3.0"
+  },
+  "require": {
+    "wordpress/wp-ai-client": "^0.4.0"
+  }
+}

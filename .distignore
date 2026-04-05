@@ -1,0 +1,11 @@
+.agents
+.claude
+.distignore
+.gitignore
+composer.json
+composer.lock
+package.json
+package-lock.json
+node_modules
+CLAUDE.md
+skills-lock.json
