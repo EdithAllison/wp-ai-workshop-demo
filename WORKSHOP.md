@@ -1,58 +1,20 @@
 # Workshop: Restoring Full Plugin Functionality
 
-This document lists all the code that was removed from the plugin and where to add it back to restore full functionality. Each section corresponds to a `TODO` comment in the codebase.
+This document lists all the code that needs to be added to complete the plugins AI functionality. Each section corresponds to a `TODO` comment in the codebase.
 
 ---
 
-## 1. AI Content Generation
+## 0. Prerequisites
 
-**File:** `includes/content.php`
+1. Install one of the AI Connectors
+2. 
 
-Replace the body of `wp_ai_workshop_generate_content()` with:
-
-```php
-function wp_ai_workshop_generate_content( $prompt ) {
-	$prompt = rtrim( $prompt );
-	if ( ! str_ends_with( $prompt, '.' ) ) {
-		$prompt .= '.';
-	}
-	$prompt .= ' Make sure the response uses valid WordPress Block Editor markup.';
-	try {
-		$text = wp_ai_client_prompt( $prompt )
-			->generate_text();
-		return $text;
-	} catch ( Exception $e ) {
-		return new WP_Error( 'content_creation_error', 'Error message', $e->getMessage() );
-	}
-}
-```
 
 ---
 
-## 2. AI Image Generation
+## 1. Ability Registration
 
-**File:** `includes/image.php`
-
-Replace the body of `wp_ai_workshop_demo_create_image()` with:
-
-```php
-function wp_ai_workshop_demo_create_image( $title ) {
-	$prompt = 'Create a relevant featured image for a blog post with the following title: ' . $title . '.';
-	$image_builder = wp_ai_client_prompt( $prompt );
-    if ( ! $image_builder->is_supported_for_image_generation() ){
-        return null;
-    }
-    try {
-        return $image_builder->generate_image();
-    }catch ( Exception $e ) {
-        return new WP_Error( 'image_creation_error', 'Error message', $e->getMessage() );
-    }
-}
-```
-
----
-
-## 3. Ability Registration
+Register the Generate Post ability and its category. This will be used by the MCP Adapter and the AI client
 
 **File:** `includes/abilities.php`
 
@@ -121,7 +83,7 @@ function wp_ai_workshop_demo_register_generate_post_ability() {
 
 ---
 
-## 4. Ability Hook Registration
+## 2. Ability Hook Registration
 
 **File:** `wp-ai-workshop-demo.php`
 
@@ -134,7 +96,22 @@ add_action( 'wp_abilities_api_init', 'wp_ai_workshop_demo_register_generate_post
 
 ---
 
-## 5. Enqueue Abilities Scripts
+## 3. Add WP AI Client autoloader
+
+**File:** `wp-ai-workshop-demo.php`
+
+Replace the `// // TODO: Include the WP AI Client Autoloader, so that we can include the wp-ai-client JavaScript.` comment with:
+
+```php
+// Include the Composer autoloader.
+if ( file_exists( __DIR__ . '/vendor/wordpress/wp-ai-client/autoload.php' ) ) {
+    require_once __DIR__ . '/vendor/wordpress/wp-ai-client/autoload.php';
+}
+```
+
+---
+
+## 4. Enqueue WP AI Client and Abilities Scripts
 
 **File:** `includes/admin.php`
 
@@ -144,6 +121,7 @@ Replace the `// TODO: Enqueue the wp-ai-client and abilities scripts.` comment w
     wp_enqueue_script( 'wp-ai-client' );
 
     // Should be removed once 7.0 is released.
+    // Note this might not be needed, to be tested
     wp_enqueue_script_module( '@wordpress/core-abilities' );
     wp_enqueue_script_module( '@wordpress/abilities' );
 ```
@@ -161,11 +139,59 @@ Also update the `wp_enqueue_script_module` call for `wp-ai-workshop-demo-script`
 
 ---
 
-## 6. Settings Page — Abilities and AI Welcome Message
+## 5. AI Content Generation
+
+**File:** `includes/content.php`
+
+Replace the body of `wp_ai_workshop_generate_content()` with:
+
+```php
+function wp_ai_workshop_generate_content( $prompt ) {
+	$prompt = rtrim( $prompt );
+	if ( ! str_ends_with( $prompt, '.' ) ) {
+		$prompt .= '.';
+	}
+	$prompt .= ' Make sure the response uses valid WordPress Block Editor markup.';
+	try {
+		$text = wp_ai_client_prompt( $prompt )
+			->generate_text();
+		return $text;
+	} catch ( Exception $e ) {
+		return new WP_Error( 'content_creation_error', 'Error message', $e->getMessage() );
+	}
+}
+```
+
+---
+
+## 6. AI Image Generation
+
+**File:** `includes/image.php`
+
+Replace the body of `wp_ai_workshop_demo_create_image()` with:
+
+```php
+function wp_ai_workshop_demo_create_image( $title ) {
+	$prompt = 'Create a relevant featured image for a blog post with the following title: ' . $title . '.';
+	$image_builder = wp_ai_client_prompt( $prompt );
+    if ( ! $image_builder->is_supported_for_image_generation() ){
+        return null;
+    }
+    try {
+        return $image_builder->generate_image();
+    }catch ( Exception $e ) {
+        return new WP_Error( 'image_creation_error', 'Error message', $e->getMessage() );
+    }
+}
+```
+
+---
+
+## 7. Settings Page — Abilities and AI Welcome Message
 
 **File:** `src/components/settings-page.jsx`
 
-### 6a. Add the Abilities import
+### 7a. Add the Abilities import
 
 Add `useEffect` back to the imports:
 
@@ -179,7 +205,7 @@ Add this import after the `DataForm` import:
 const { getAbility, executeAbility } = await import( /* webpackIgnore: true */ '@wordpress/abilities' );
 ```
 
-### 6b. AI Welcome Message
+### 7b. AI Welcome Message
 
 Inside the `SettingsPage` component, add this `useEffect` after the `useState` declarations:
 
@@ -197,7 +223,7 @@ Inside the `SettingsPage` component, add this `useEffect` after the `useState` d
     }, [] );
 ```
 
-### 6c. Generate Post via Ability
+### 7c. Generate Post via Ability
 
 Replace the body of `generateFromInput` with:
 
@@ -223,3 +249,10 @@ Replace the body of `generateFromInput` with:
         }
     }, [ input ] );
 ```
+
+## 8. Install the MCP Adapter
+
+- Install the plugin
+- Create an Application Password for an admin user
+- Configure the AI Client application with the MCP details
+- Test the Post Generation Abilities.

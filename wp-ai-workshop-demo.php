@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP AI Workshop Demo
  * Description: A demo plugin to showcase the integration of the WordPress AI Client.
- * Version: 2.0.0
+ * Version: 1.0.0
  * Requires at least: 7.0
  * Author: Jonathan Bossenger
  * Plugin URI: https://github.com/jonathanbossenger/wp-ai-workshop-demo
@@ -15,10 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// Include the Composer autoloader.
-if ( file_exists( __DIR__ . '/vendor/wordpress/wp-ai-client/autoload.php' ) ) {
-    require_once __DIR__ . '/vendor/wordpress/wp-ai-client/autoload.php';
-}
+// TODO: Include the WP AI Client Autoloader, so that we can include the wp-ai-client JavaScript
 
 // Include plugin files.
 require_once __DIR__ . '/includes/ai-client.php';
