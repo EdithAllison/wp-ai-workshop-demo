@@ -1,14 +1,20 @@
 # Workshop: Restoring Full Plugin Functionality
 
-This document lists all the code that needs to be added to complete the plugins AI functionality. Each section corresponds to a `TODO` comment in the codebase.
+This document lists all the code that needs to be added to complete the plugin's AI functionality. Each section corresponds to a `TODO` comment in the codebase.
 
 ---
 
 ## 0. Prerequisites
 
 1. Install one of the AI Connectors
-2. 
+2. Configure the connector with the necessary API keys and credentials/settings
+3. Install all the dependencies
 
+```shell
+cd /path/to/wp-content/plugins/wp-ai-workshop-demo
+composer install
+npm install
+```
 
 ---
 
@@ -96,7 +102,15 @@ add_action( 'wp_abilities_api_init', 'wp_ai_workshop_demo_register_generate_post
 
 ---
 
-## 3. Add WP AI Client autoloader
+## 3. Test Abilities REST API endpoint
+
+Create an Application Password for the admin user
+
+curl -u 'USERNAME:APPLICATION_PASSWORD' https://local-site/wp-json/wp-abilities/v1/abilities
+
+---
+
+## 4. Add WP AI Client autoloader
 
 **File:** `wp-ai-workshop-demo.php`
 
@@ -113,76 +127,27 @@ if ( file_exists( __DIR__ . '/vendor/wordpress/wp-ai-client/autoload.php' ) ) {
 
 ## 4. Enqueue WP AI Client and Abilities Scripts
 
+### TODO: update based on existing file
+
 **File:** `includes/admin.php`
 
 Replace the `// TODO: Enqueue the wp-ai-client and abilities scripts.` comment with:
 
 ```php
     wp_enqueue_script( 'wp-ai-client' );
-
-    // Should be removed once 7.0 is released.
-    // Note this might not be needed, to be tested
+    
     wp_enqueue_script_module( '@wordpress/core-abilities' );
-    wp_enqueue_script_module( '@wordpress/abilities' );
 ```
 
-Also update the `wp_enqueue_script_module` call for `wp-ai-workshop-demo-script` to include the `@wordpress/abilities` dependency:
+Also update the `wp_enqueue_script_module` call for `wp-ai-workshop-demo-script` to include the `@wordpress/core-abilities` dependency:
 
 ```php
     wp_enqueue_script_module(
         'wp-ai-workshop-demo-script',
         plugins_url( 'build/index.js', __DIR__ ),
-        array( '@wordpress/abilities' ),
+        array( '@wordpress/core-abilities' ),
         $asset_file['version'],
     );
-```
-
----
-
-## 5. AI Content Generation
-
-**File:** `includes/content.php`
-
-Replace the body of `wp_ai_workshop_generate_content()` with:
-
-```php
-function wp_ai_workshop_generate_content( $prompt ) {
-	$prompt = rtrim( $prompt );
-	if ( ! str_ends_with( $prompt, '.' ) ) {
-		$prompt .= '.';
-	}
-	$prompt .= ' Make sure the response uses valid WordPress Block Editor markup.';
-	try {
-		$text = wp_ai_client_prompt( $prompt )
-			->generate_text();
-		return $text;
-	} catch ( Exception $e ) {
-		return new WP_Error( 'content_creation_error', 'Error message', $e->getMessage() );
-	}
-}
-```
-
----
-
-## 6. AI Image Generation
-
-**File:** `includes/image.php`
-
-Replace the body of `wp_ai_workshop_demo_create_image()` with:
-
-```php
-function wp_ai_workshop_demo_create_image( $title ) {
-	$prompt = 'Create a relevant featured image for a blog post with the following title: ' . $title . '.';
-	$image_builder = wp_ai_client_prompt( $prompt );
-    if ( ! $image_builder->is_supported_for_image_generation() ){
-        return null;
-    }
-    try {
-        return $image_builder->generate_image();
-    }catch ( Exception $e ) {
-        return new WP_Error( 'image_creation_error', 'Error message', $e->getMessage() );
-    }
-}
 ```
 
 ---
@@ -250,9 +215,100 @@ Replace the body of `generateFromInput` with:
     }, [ input ] );
 ```
 
-## 8. Install the MCP Adapter
+Run the build step.
 
-- Install the plugin
+```shell
+npm run build
+```
+
+---
+
+## 5. AI Content Generation
+
+**File:** `includes/content.php`
+
+Replace the body of `wp_ai_workshop_generate_content()` with:
+
+```php
+function wp_ai_workshop_generate_content( $prompt ) {
+	$prompt = rtrim( $prompt );
+	if ( ! str_ends_with( $prompt, '.' ) ) {
+		$prompt .= '.';
+	}
+	$prompt .= ' Make sure the response uses valid WordPress Block Editor markup.';
+	try {
+		$text = wp_ai_client_prompt( $prompt )
+			->generate_text();
+		return $text;
+	} catch ( Exception $e ) {
+		return new WP_Error( 'content_creation_error', 'Error message', $e->getMessage() );
+	}
+}
+```
+
+---
+
+## 6. AI Image Generation (optional)
+
+**File:** `includes/image.php`
+
+Replace the body of `wp_ai_workshop_demo_create_image()` with:
+
+```php
+function wp_ai_workshop_demo_create_image( $title ) {
+	$prompt = 'Create a relevant featured image for a blog post with the following title: ' . $title . '.';
+	$image_builder = wp_ai_client_prompt( $prompt );
+    if ( ! $image_builder->is_supported_for_image_generation() ){
+        return null;
+    }
+    try {
+        return $image_builder->generate_image();
+    }catch ( Exception $e ) {
+        return new WP_Error( 'image_creation_error', 'Error message', $e->getMessage() );
+    }
+}
+```
+
+---
+
+## 8. Install and try the MCP Adapter
+
+Update the create-post Ability metadata
+
+```php
+'meta'                => array(
+    'show_in_rest' => true,
+    'mcp' => array(
+        'public' => true  // Expose this ability via MCP
+    )
+),
+```
+
+- Install the [MCP Adapter](https://github.com/WordPress/mcp-adapter/releases/tag/v0.4.1) plugin
 - Create an Application Password for an admin user
 - Configure the AI Client application with the MCP details
 - Test the Post Generation Abilities.
+
+```json
+{
+  "mcpServers": {
+    "wordpress-http-default": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@automattic/mcp-wordpress-remote@latest"
+      ],
+      "env": {
+        "WP_API_URL": "http://local-site/wp-json/mcp/mcp-adapter-default-server",
+        "LOG_FILE": "/path/to/logs/mcp-adapter.log",
+        "WP_API_USERNAME": "your-username",
+        "WP_API_PASSWORD": "your-application-password"
+      }
+    }
+  }
+}
+```
+
+MCP remove troubleshooting: https://github.com/Automattic/mcp-wordpress-remote/blob/trunk/Docs/troubleshooting.md
+- npx version: hardcode it
+- local SSL cert
