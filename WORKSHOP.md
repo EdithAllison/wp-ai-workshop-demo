@@ -239,8 +239,9 @@ function wp_ai_workshop_generate_content( $prompt ) {
 	try {
 		$text = wp_ai_client_prompt( $prompt )
 			->generate_text();
-		$text = preg_replace( '/^```(?:html)?\s*/i', '', $text );
-		$text = preg_replace( '/\s*```$/i', '', $text );
+		$text = trim( $text );
+		$text = preg_replace( '/^\s*```(?:[a-z0-9_-]+)?\s*/i', '', $text );
+		$text = preg_replace( '/\s*```\s*$/i', '', $text );
 		return $text;
 	} catch ( Exception $e ) {
 		return new WP_Error( 'content_creation_error', 'Error message', $e->getMessage() );
